@@ -4,8 +4,6 @@ import numpy as np
 import pandas as pd
 from psycopg2.extensions import register_adapter, AsIs
 
-# test
-
 # registering a type adapter for np.int64 to ensure that pscycopg2 can handle numpy data types
 # AsIs adapter ensures that numpy's int64 data type is passed to SQL
 psycopg2.extensions.register_adapter(np.int64, psycopg2._psycopg.AsIs)
