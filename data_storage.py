@@ -24,10 +24,11 @@ nasdaq_100_tickers = nasdaq_100_tickers_df["Ticker"].tolist()
 
 
 # Database connection parameters
-dbname = "stocks"
+dbname = "postgres"
 user = "postgres"
-password = "Narik123"
-host = "127.0.0.1"
+password = "Narik1232005!"
+# local host is 127.0.0.1
+host = "stocks-project-db.c5ysaoggi233.us-east-1.rds.amazonaws.com"
 port = "5432"
 
 
