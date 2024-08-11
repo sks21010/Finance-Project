@@ -4,6 +4,10 @@ import numpy as np
 import pandas as pd
 from psycopg2.extensions import register_adapter, AsIs
 
+from dotenv import load_dotenv
+import os
+load_dotenv()
+
 # registering a type adapter for np.int64 to ensure that pscycopg2 can handle numpy data types
 # AsIs adapter ensures that numpy's int64 data type is passed to SQL
 psycopg2.extensions.register_adapter(np.int64, psycopg2._psycopg.AsIs)
@@ -24,12 +28,11 @@ nasdaq_100_tickers = nasdaq_100_tickers_df["Ticker"].tolist()
 
 
 # Database connection parameters
-dbname = "postgres"
-user = "postgres"
-password = "Narik1232005!"
-# local host is 127.0.0.1
-host = "stocks-project-db.c5ysaoggi233.us-east-1.rds.amazonaws.com"
-port = "5432"
+dbname = os.getenv('DBNAME')
+user = os.getenv("USER")
+password = os.getenv("PASSWORD")
+host = os.getenv("HOST")
+port = os.getenv("PORT")
 
 
 # Check if database exists
@@ -84,7 +87,7 @@ query = '''INSERT INTO prices (Date, Open, High, Low, Close, Adj_Close, Volume, 
 
 # for ticker in usa_tickers:
 #     try:
-#         stock_data = yf.download(ticker, start='2021-8-1', end="2023-10-1") # returns a data frame
+#         stock_data = yf.download(ticker, start='2021-6-1', end="2023-6-1") # returns a data frame
 #         stock_data.index = np.datetime_as_string(stock_data.index, unit='D') # convert date to string
 #         stock_data['Ticker'] = ticker # create a new column for ticker
 #         stock_data = stock_data.rename(columns={"Adj Close": "Adj_Close"}) # Add _ to avoid name issues in database
