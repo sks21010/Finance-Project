@@ -1,21 +1,23 @@
-import psycopg2
+# import psycopg2
 
-from dotenv import load_dotenv
-import os
-load_dotenv()
+# from dotenv import load_dotenv
+# import os
+# load_dotenv()
 
-# Database connection parameters
-dbname = os.getenv('DBNAME')
-user = os.getenv("USER")
-password = os.getenv("PASSWORD")
-host = os.getenv("HOST")
-port = os.getenv("PORT")
+# # Database connection parameters
+# dbname = os.getenv('DBNAME')
+# user = os.getenv("USER")
+# password = os.getenv("PASSWORD")
+# host = os.getenv("HOST")
+# port = os.getenv("PORT")
+
+from database_connect import conn
 
 
-conn = psycopg2.connect(
-    database=dbname, user=user, password=password, host=host, port=port
-)
-conn.autocommit = True
+# conn = psycopg2.connect(
+#     database=dbname, user=user, password=password, host=host, port=port
+# )
+# conn.autocommit = True
 cur = conn.cursor()
 
 try: 
