@@ -26,6 +26,8 @@ cur = conn.cursor()
 
 
 def fetch_distinct_tickers(column_name):
+    """Returns a list of distinct ticker names"""
+
     sql = f"SELECT DISTINCT({column_name}) FROM prices;"
     cur.execute(sql)
     distinct_tickers = cur.fetchall()
@@ -34,8 +36,29 @@ def fetch_distinct_tickers(column_name):
     return distinct_tickers_list
 
 selectbox_values = fetch_distinct_tickers("ticker")
-selected_ticker = st.selectbox("Select a ticker:", selectbox_values)
+selected_ticker = st.selectbox("Search for a ticker:", selectbox_values)
 
+def largest_data_gap():
+    """Returns the largest gap of days in between data"""
+
+    sql = '''WITH DateDifferences AS (
+        SELECT 
+            date,
+            LEAD(date) OVER (ORDER BY date) AS next_date,
+            LEAD(date) OVER (ORDER BY date) - date AS date_diff
+        FROM 
+            prices
+    )
+    SELECT 
+        MAX(date_diff) AS max_difference
+    FROM 
+        DateDifferences
+    WHERE 
+        next_date IS NOT NULL;'''
+
+    cur.execute(sql)
+    days_gap = cur.fetchone()[0]
+    return days_gap
 
 # Date range
 default_start_date = datetime(2021, 1, 1)
@@ -45,12 +68,12 @@ default_end_date = datetime(2024, 1, 1)
 start_date_selected = st.date_input("Start date:", 
                                     value=default_start_date, 
                                     min_value=default_start_date, 
-                                    max_value=default_end_date - timedelta(days=4)
+                                    max_value=default_end_date - timedelta(days=largest_data_gap())
                                     )
 
 end_date_selected = st.date_input("End date:", 
                                   value=default_end_date, 
-                                  min_value = start_date_selected + timedelta(days=4), 
+                                  min_value = start_date_selected + timedelta(days=largest_data_gap()), 
                                   max_value=default_end_date
                                   )
 
@@ -96,38 +119,26 @@ footer = """
     <style>
     .footer {
         position: fixed;
+        display: flex;
         bottom: 0;
+        left: 0;
         width: 100vw;
         height: 4vh;
-        justify-content: center;
         background-color: #f1f1f1;
         font-size: 14px;
         color: #333;
+        text-align: center;
+        align-items: center;
+        justify-content: center;
+        padding-left: 7.5vh;
+        margin: 0;
     }
     </style>
     <div class="footer">
-        &copy; 2024 Your Company. All rights reserved.
+        &copy; 2024 Sri Kiran Sripada. All rights reserved.
     </div>
 """
 
 st.markdown(footer, unsafe_allow_html=True)
 
-sql = '''WITH DateDifferences AS (
-    SELECT 
-        date,
-        LEAD(date) OVER (ORDER BY date) AS next_date,
-        LEAD(date) OVER (ORDER BY date) - date AS date_diff
-    FROM 
-        prices
-)
-SELECT 
-    MAX(date_diff) AS max_difference
-FROM 
-    DateDifferences
-WHERE 
-    next_date IS NOT NULL;
 
-'''
-
-# cur.execute(sql)
-# print(cur.fetchone()[0])
