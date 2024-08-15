@@ -17,7 +17,7 @@ st.markdown("""
         }
     </style>
     <div class="custom-title-section">
-        <h1>Welcome to the Stock Analysis Tool!</h1>
+        <h1>Welcome to the Stock Analysis Web Tool!</h1>
         <h4>View historic stock price data for companies in the NASDAQ 100 index!</h4>
     </div>
     """, unsafe_allow_html=True)
