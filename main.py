@@ -35,8 +35,9 @@ def fetch_distinct_tickers(column_name):
     distinct_tickers_list.sort(key=lambda x: (x, len(x)))
     return distinct_tickers_list
 
-selectbox_values = fetch_distinct_tickers("ticker")
-selected_ticker = st.selectbox("Search for a ticker:", selectbox_values)
+selectbox_values = [""] + fetch_distinct_tickers("ticker")
+selected_tickers = st.multiselect("Select tickers (max 5):", selectbox_values, max_selections=5)
+
 
 def largest_data_gap():
     """Returns the largest gap of days in between data"""
@@ -79,26 +80,27 @@ end_date_selected = st.date_input("End date:",
 
 
 
-st.write(f"Change in stock price of {selected_ticker} from {start_date_selected} to {end_date_selected}:")
+st.write(f"Showing data for {', '.join(selected_tickers)} from {start_date_selected} to {end_date_selected}:")
 st.write("")
 
-
-sql = '''SELECT date, adj_close FROM prices 
-        WHERE ticker = %s 
-            AND date BETWEEN %s AND %s
-        ORDER BY date'''
-params = (selected_ticker, start_date_selected, end_date_selected) # parameters to SQL statement must be provided in tuple form
-cur.execute(sql, params)
-rows = cur.fetchall()
-columns = [desc[0] for desc in cur.description]
-
-df = pd.DataFrame(rows, columns=columns)
-
-# Plotting with Matplotlib
 plt.figure(figsize=(10, 5))
-plt.plot(df["date"], df["adj_close"])
+
+for ticker in selected_tickers:
+    sql = '''SELECT date, adj_close FROM prices 
+            WHERE ticker = %s 
+                AND date BETWEEN %s AND %s
+            ORDER BY date'''
+    params = (ticker, start_date_selected, end_date_selected) # parameters to SQL statement must be provided in tuple form
+    cur.execute(sql, params)
+    rows = cur.fetchall()
+    columns = [desc[0] for desc in cur.description]
+    df = pd.DataFrame(rows, columns=columns)
+    
+    
+    plt.plot(df["date"], df["adj_close"], label=ticker)
+
 # plt.title(f"Stock Price Over Time for {selected_ticker}", pad=20)
-plt.title(f"Change in Stock Price (USD) of {selected_ticker} from {start_date_selected} to {end_date_selected}:", pad=20)
+plt.title(f"Change in Stock Price (USD) for {', '.join(selected_tickers)} from {start_date_selected} to {end_date_selected}:", pad=20)
 plt.xlabel("Date", labelpad=20)
 plt.ylabel("Adjusted Closing Price (USD)", labelpad=20)
 plt.xticks(rotation=45)
@@ -112,6 +114,7 @@ plt.figtext(0.5,
             color='red', 
             bbox=dict(facecolor='none', edgecolor='none', pad=5)
             )
+plt.legend()
 st.pyplot(plt)
 
 
