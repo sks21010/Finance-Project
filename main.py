@@ -1,9 +1,9 @@
 import streamlit as st
-from database_connect import conn
+import plotly.graph_objs as go
 import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib as mpl
+from database_connect import conn
 from datetime import datetime, timedelta
+
 
 st.markdown("""
     <style>
@@ -17,31 +17,27 @@ st.markdown("""
         }
     </style>
     <div class="custom-title-section">
-        <h1>Welcome to the Stock Analysis Web Tool!</h1>
+        <h1>Welcome to the Stock Analysis Tool!</h1>
         <h4>View historic stock price data for companies in the NASDAQ 100 index!</h4>
     </div>
     """, unsafe_allow_html=True)
 
-
 cur = conn.cursor()
-
 
 def fetch_distinct_tickers(column_name):
     """Returns a list of distinct ticker names"""
-
     sql = f"SELECT DISTINCT({column_name}) FROM prices;"
     cur.execute(sql)
     distinct_tickers = cur.fetchall()
-    distinct_tickers_list = [tuple[0] for tuple in distinct_tickers] # cur.fetchall() returns a tuple, 2nd value is blank in this case
+    distinct_tickers_list = [tuple[0] for tuple in distinct_tickers]
     distinct_tickers_list.sort(key=lambda x: (x, len(x)))
     return distinct_tickers_list
 
-selectbox_values = fetch_distinct_tickers("ticker")
-selected_ticker = st.selectbox("Search for a ticker:", selectbox_values)
+selectbox_values = [""] + fetch_distinct_tickers("ticker")
+selected_tickers = st.multiselect("Select tickers to view & compare (max 5):", selectbox_values, max_selections=5)
 
 def largest_data_gap():
     """Returns the largest gap of days in between data"""
-
     sql = '''WITH DateDifferences AS (
         SELECT 
             date,
@@ -56,16 +52,13 @@ def largest_data_gap():
         DateDifferences
     WHERE 
         next_date IS NOT NULL;'''
-
     cur.execute(sql)
     days_gap = cur.fetchone()[0]
     return days_gap
 
-# Date range
 default_start_date = datetime(2021, 1, 1)
 default_end_date = datetime(2024, 1, 1)
 
-# Controlling date selection
 start_date_selected = st.date_input("Start date:", 
                                     value=default_start_date, 
                                     min_value=default_start_date, 
@@ -78,60 +71,37 @@ end_date_selected = st.date_input("End date:",
                                   max_value=default_end_date
                                   )
 
+st.write("_Hover your cursor over the graph to examine stock prices at specific dates!_") # italicized text
 
 
-st.write(f"Change in stock price of {selected_ticker} from {start_date_selected} to {end_date_selected}:")
-st.write("")
+fig = go.Figure()
 
+for ticker in selected_tickers:
+    sql = '''SELECT date, adj_close FROM prices 
+            WHERE ticker = %s 
+                AND date BETWEEN %s AND %s
+            ORDER BY date'''
+    params = (ticker, start_date_selected, end_date_selected)
+    cur.execute(sql, params)
+    rows = cur.fetchall()
+    columns = [desc[0] for desc in cur.description]
+    df = pd.DataFrame(rows, columns=columns)
+    
+    
+    fig.add_trace(go.Scatter(x=df["date"], y=df["adj_close"], mode='lines', name=ticker))
 
-sql = '''SELECT date, adj_close FROM prices 
-        WHERE ticker = %s 
-            AND date BETWEEN %s AND %s
-        ORDER BY date'''
-params = (selected_ticker, start_date_selected, end_date_selected) # parameters to SQL statement must be provided in tuple form
-cur.execute(sql, params)
-rows = cur.fetchall()
-columns = [desc[0] for desc in cur.description]
+fig.update_layout(
+                title={
+                        'text': f"Change in Stock Price (USD) for {', '.join(selected_tickers)} from {start_date_selected} to {end_date_selected}:",
+                        'x': 0.5,
+                        'xanchor': 'center'
+                    },
+                    xaxis_title="Date",
+                    yaxis_title="Adjusted Closing Price (USD)",
+                    xaxis_tickformat='%Y-%m-%d'
+                )
 
-df = pd.DataFrame(rows, columns=columns)
-
-
-
-dark_style = {
-    'axes.facecolor': 'black',
-    'figure.facecolor': 'black',
-    'figure.edgecolor': 'black',
-    'axes.edgecolor': 'white',
-    'axes.labelcolor': 'white',
-    'xtick.color': 'white',
-    'ytick.color': 'white',
-    'text.color': 'white',
-    'grid.color': 'gray',
-    'grid.linestyle': '--'
-}
-
-# Apply the custom style
-mpl.rcParams.update(dark_style)
-
-# Plotting with Matplotlib
-plt.figure(figsize=(10, 5))
-plt.plot(df["date"], df["adj_close"])
-# plt.title(f"Stock Price Over Time for {selected_ticker}", pad=20)
-plt.title(f"Change in Stock Price (USD) of {selected_ticker} from {start_date_selected} to {end_date_selected}:", pad=20)
-plt.xlabel("Date", labelpad=20)
-plt.ylabel("Adjusted Closing Price (USD)", labelpad=20)
-plt.xticks(rotation=45)
-plt.grid(True)
-plt.figtext(0.5, 
-            -0.15, 
-            "Note: YYYY-MM-DD for larger ranges, MM-DD-HH for very small ranges, if any such meaningful ranges exist.", 
-            ha='center', 
-            va='center', 
-            fontsize=9, 
-            color='red', 
-            bbox=dict(facecolor='none', edgecolor='none', pad=5)
-            )
-st.pyplot(plt)
+st.plotly_chart(fig)
 
 
 footer = """
