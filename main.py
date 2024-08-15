@@ -2,6 +2,7 @@ import streamlit as st
 from database_connect import conn
 import pandas as pd
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from datetime import datetime, timedelta
 
 st.markdown("""
@@ -94,6 +95,24 @@ columns = [desc[0] for desc in cur.description]
 
 df = pd.DataFrame(rows, columns=columns)
 
+
+
+dark_style = {
+    'axes.facecolor': 'black',
+    'figure.facecolor': 'black',
+    'figure.edgecolor': 'black',
+    'axes.edgecolor': 'white',
+    'axes.labelcolor': 'white',
+    'xtick.color': 'white',
+    'ytick.color': 'white',
+    'text.color': 'white',
+    'grid.color': 'gray',
+    'grid.linestyle': '--'
+}
+
+# Apply the custom style
+mpl.rcParams.update(dark_style)
+
 # Plotting with Matplotlib
 plt.figure(figsize=(10, 5))
 plt.plot(df["date"], df["adj_close"])
@@ -140,5 +159,6 @@ footer = """
 """
 
 st.markdown(footer, unsafe_allow_html=True)
+
 
 
