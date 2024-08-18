@@ -9,9 +9,13 @@ def init_connection():
         st.error(f"Operational error: {e}")
     except psycopg2.InterfaceError as e:
         st.error(f"Interface error: {e}")
-        return psycopg2.connect(**st.secrets["postgres"])
+        try:
+            return psycopg2.connect(**st.secrets["postgres"])
+        except Exception as retry_e:
+            st.error(f"Retry failed: {retry_e}")
     except Exception as e:
         st.error(f"Unexpected error: {e}")
+    return None
 
 conn = init_connection()
     
