@@ -1,7 +1,7 @@
 import streamlit as st
 import psycopg2
 
-@st.cache_resource(ttl=600)
+
 def init_connection():
     try: 
         return psycopg2.connect(**st.secrets["postgres"])
